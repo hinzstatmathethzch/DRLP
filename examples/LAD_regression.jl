@@ -8,16 +8,15 @@ dim=4
 X=rand(n,dim)
 Y=rand(n)
 
-# create Quantile Regression model
-include("../models/QREG.jl")
-alpha=0.8
-model=QREG_Model(X,Y,alpha)
+# create Least Absolute Deviation model
+include("../models/LAD.jl")
+model=LAD_Model(X,Y)
 
 # set start point
 x0=zeros(model.n0)
 
 # train
-println("Performing Quantile Regression with alpha=$alpha in dimension $dim")
+println("Performing LAD Regression in dimension $dim")
 (state,path,x)=solverLP(model,x0);
 println("Found local minimum at x=")
 display(x)

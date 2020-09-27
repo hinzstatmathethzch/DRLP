@@ -1,6 +1,6 @@
-include("../models/random.jl")
-include("../models/L1DataModel.jl")
-include("./solverLP.jl")
+include("models/random.jl")
+include("models/L1DataModel.jl")
+include("./solverLP/solverLP.jl")
 
 
 randmodel=randomModel(4,[5,4,2])
@@ -9,8 +9,6 @@ n=500
 Ydata=rand(Uniform(-3,3),n)
 Xdata=rand(Uniform(-3,3),randmodel.n0,n)
 
-include("../models/L1DataModel.jl")
-include("./solverLP.jl")
 l=2
 datamodel=L1DataModel(randmodel,Xdata,Ydata,l)
 model=datamodel
