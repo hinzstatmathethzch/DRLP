@@ -1,7 +1,7 @@
 
-function randomInput(model::Model,n::Int)
-	return rand(model.n0,n)
-end
+# function randomInput(model::Model,n::Int)
+# 	return rand(model.n0,n)
+# end
 function layerOutput(m::Model,x::Array{Float64,1},l::Int)
 	tmp=x
 	for i = 1:l

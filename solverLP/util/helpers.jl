@@ -65,12 +65,14 @@ function changeActivationPattern!(s,m::Model,pos::Tuple{Int,Int},newVal::Bool)
 	j=pos[2]
 	s[l][j]=newVal
 	diff=m.n[l]-m.nNoDuplicate[l] #TODO: needs correction!! see DRLPL1
-	lower=m.nNoDuplicate[l]-diff+1
-	upper=m.nNoDuplicate[l]
-	if j>=lower || j<=upper
-		s[l][j+diff]=!newVal
-	elseif j>upper
-		s[l][j-diff]=!newVal
+	if diff>0
+		lower=m.nNoDuplicate[l]-diff+1
+		upper=m.nNoDuplicate[l]
+		if j>=lower || j<=upper
+			s[l][j+diff]=!newVal
+		elseif j>upper
+			s[l][j-diff]=!newVal
+		end
 	end
 end
 function PseudoInverseRemoveCol(Apseudo,colId::Int)
@@ -94,32 +96,31 @@ mutable struct SolverState
 	x::Array{Float64,1}
 	critical::Array{Tuple{Int,Int},1}
 	gradient::Array{Float64,1}
-	negModifiedGrad::Array{Float64,1}
+	direction::Array{Float64,1}
 	function SolverState(model::Model,x::Array{Float64,1})
 		(s,grad)=sigGrad(model,x);
 		new(zeros(0,model.n0),s,x,Array{Tuple{Int,Int},1}(),grad,-grad)
 	end
 end
 function step(model::Model,state::SolverState)
-	v=state.negModifiedGrad
-	(t,change)=advanceMaxAdjustedNew(model,state,v)
-	if size(change,1)==0 #no step possible
-		if all(iszero,v)
-			return ((0,0),[])
-		else
-			return ((-1,-1),[])
-		end
+	v=state.direction
+	if norm(v)<1e-8
+		@error "Direction is zero"
+		# return (-1, nothing) #code -1: direction v is zero
+	end
+	(t,pos)=advanceMaxAdjustedNew(model,state,v)
+	if t==Inf64 #no step possible
+		throw("No step possible (infinite region)")
 	end
 	state.x=state.x+t*v
 	############################### add critical
-	pos=(change[1][1],change[1][2])
 	normalvec=addCritical!(model,state,pos)
 	if size(state.Apseudo,1)<model.n0
 		############################### orthogonalize
-		v=state.negModifiedGrad
-		state.negModifiedGrad=v-project(model,state,v)
+		v=state.direction
+		state.direction=v-project(model,state,v)
 	else
-		state.negModifiedGrad=zeros(model.n0)
+		state.direction=zeros(model.n0)
 	end
 	return (pos,normalvec,t)
 end
@@ -184,8 +185,7 @@ function advanceMaxAdjustedNew(m::Model,state::SolverState,v,cap::Float64=-0.1)
 	if considerCritical
 		nextCriticalLayer=first(critical[criticalIdx])	
 	end
-	change=Array{Tuple{Int,Int,Bool,Float64},1}()
-	sizehint!(change,10)
+	change=Tuple{Int,Int}((1,1))
 	α=m.W[1]*x+m.b[1]
 	β=m.W[1]*v
 	t=Inf64
@@ -210,12 +210,12 @@ function advanceMaxAdjustedNew(m::Model,state::SolverState,v,cap::Float64=-0.1)
 			if β[j]!=0
 				τ=-α[j]/β[j]
 				if (((s[i][j]==true)&&(β[j]<0))||((s[i][j]==false)&&(β[j]>0))) && τ>cap
-					if τ<=t+1e-10
+					if τ<t
+						change=(i,j)
+						t=τ
 						if τ<t-1e-10
-							empty!(change)
-							t=τ
+							#warning: maybe multiple hyperplanes here!
 						end
-						push!(change,(i,j,(β[j]>0),τ))
 					end
 				end
 			end

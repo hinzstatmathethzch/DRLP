@@ -3,21 +3,44 @@ include("models/L1DataModel.jl")
 include("./solverLP/solverLP.jl")
 
 
-randmodel=randomModel(4,[5,4,2])
-n=500
-# input parameters
-Ydata=rand(Uniform(-3,3),n)
-Xdata=rand(Uniform(-3,3),randmodel.n0,n)
-
-l=1
-datamodel=L1DataModel(randmodel,Xdata,Ydata,l)
-model=datamodel
-
+model=randomModel(2,[10,10,10,10,10])
 x0=rand(Uniform(-20,20),model.n0)
-x=x0
-
-(code,trace1,x)=solverLP(model,x);
+(code,trace1,x)=solverLP(model,x0);
 code
+
+using Plots
+
+model=randomModel(1,[50,10,10,10,10,10])
+x0=[0.0]
+(code,trace1,x)=solverLP(model,x0);
+xopt=x[1]
+xrange=LinRange(xopt-0.3,xopt+0.3,1000)
+yvals = [f(model,x)[1] for x in xrange]
+plot(xrange,yvals)
+vline!([x])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##############################
 # analysis for increasing function value

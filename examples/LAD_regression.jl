@@ -21,7 +21,3 @@ println("Performing LAD Regression in dimension $dim")
 println("Found local minimum at x=")
 display(x)
 println("\nwith function value f(x)=$(f(model,x)[1])")
-
-# optionally plot the path of scores:
-# using Plots
-# plot(last.(path))
