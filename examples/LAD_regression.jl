@@ -1,4 +1,4 @@
-include("../solverLP/solverLP.jl")
+include("../solver/solver.jl")
 
 # set number of observations
 n=10000

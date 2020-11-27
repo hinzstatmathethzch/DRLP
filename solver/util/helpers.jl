@@ -105,10 +105,10 @@ end
 function step(model::Model,state::SolverState)
 	v=state.direction
 	if norm(v)<1e-8
-		@error "Direction is zero"
+		throw("Direction is zero")
 		# return (-1, nothing) #code -1: direction v is zero
 	end
-	(t,pos)=advanceMaxAdjustedNew(model,state,v)
+	(t,pos)=advanceMax(model,state,v)
 	if t==Inf64 #no step possible
 		throw("No step possible (infinite region)")
 	end
@@ -124,17 +124,17 @@ function step(model::Model,state::SolverState)
 	end
 	return (pos,normalvec,t)
 end
-function bestIndex(state::SolverState,gradient)
+function bestIndex(state::SolverState,gradient::Vector)
 maxVal=0.0;
-minIndex=0;
+maxIndex=0;
 for i = 1:size(state.Apseudo,1)
 	newVal=dot(state.Apseudo[i,:],gradient)/sqrt(dot(state.Apseudo[i,:],state.Apseudo[i,:]))
 	if newVal>maxVal
-		minIndex=i;
+		maxIndex=i;
 		maxVal=newVal
 	end
 end
-return minIndex
+return maxIndex
 end
 function addCritical!(model::Model,state::SolverState,pos::Tuple{Int,Int})
 	# println("pos: $(pos), state.s: $(state.s)")
@@ -156,6 +156,11 @@ function ReLUArguments(m::Model,state::SolverState,x::Array{Float64,1})
 	end
 	return out
 end
+
+####################
+# project a vector "vec" onto the span of the critical 
+# axes without the axis having index "skipIndex"
+####################
 function projectSkip(model::Model,state::SolverState,vec,skipIndex::Int)
 	iproductsNegGradient=innerProductsOrientedNormalVectors(model,state.s,vec)
 	coordinates = extractCriticalInnerProducts(state.critical,iproductsNegGradient)
@@ -164,9 +169,15 @@ function projectSkip(model::Model,state::SolverState,vec,skipIndex::Int)
 end
 
 function project(model::Model,state::SolverState,vec)
-	iproductsNegGradient = innerProductsOrientedNormalVectors(model,state.s,vec)
-	coordinates = extractCriticalInnerProducts(state.critical,iproductsNegGradient)
-	return state.Apseudo' * coordinates
+	if size(state.Apseudo,1)==0
+		return zeros(model.n0)
+	end
+	if size(state.Apseudo,1)<model.n0
+		iproductsNegGradient = innerProductsOrientedNormalVectors(model,state.s,vec)
+		coordinates = extractCriticalInnerProducts(state.critical,iproductsNegGradient)
+		return state.Apseudo' * coordinates
+	end
+	return vec
 end
 
 ####################
@@ -174,7 +185,7 @@ end
 # in direction v with signature s ignoring 
 # signature changes in neurons specified in "critical"
 ####################
-function advanceMaxAdjustedNew(m::Model,state::SolverState,v,cap::Float64=-0.1)
+function advanceMax(m::Model,state::SolverState,v,cap::Float64=-0.1)
 	s=state.s
 	x=state.x
 	critical=deepcopy(state.critical)

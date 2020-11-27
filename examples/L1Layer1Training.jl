@@ -1,6 +1,6 @@
 include("../models/random.jl")
 include("../models/L1DataModel.jl")
-include("../solverLP/solverLP.jl")
+include("../solver/solver.jl")
 
 
 randmodel=randomModel(4,[5,4,2])
@@ -14,9 +14,8 @@ datamodel=L1DataModel(randmodel,Xdata,Ydata,l)
 model=datamodel
 
 x0=rand(Uniform(-20,20),model.n0)
-x=x0
 
-(code,trace1,x)=solverLP(model,x);
+(code,trace1,x)=solverLP(model,x0);
 code
 
 
