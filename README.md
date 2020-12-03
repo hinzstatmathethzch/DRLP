@@ -4,7 +4,7 @@
 This repository contains an [implementation of the Deep ReLU Programming algorithm](solverLP) and [examples for demonstration](examples).
 
 ## Article
-A draft of the article can be found here.
+A draft of the article can be found [here](https://arxiv.org/abs/2011.14895).
 
 ## Structure
 This repository has the following directory structure:
